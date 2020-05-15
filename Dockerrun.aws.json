@@ -1,0 +1,204 @@
+{
+  "AWSEBDockerrunVersion": 2,
+  "volumes": [
+    {
+      "name": "saleor-core",
+      "host": {
+        "sourcePath": "/var/app/current/saleor"
+      }
+    },
+    {
+      "name": "saleor-templates",
+      "host": {
+        "sourcePath": "/var/app/current/templates"
+      }
+    },
+    {
+      "name": "saleor-tests",
+      "host": {
+        "sourcePath": "/var/app/current/tests"
+      }
+    },
+    {
+      "name": "saleor-assets",
+      "host": {
+        "sourcePath": "/var/app/current/saleor"
+      }
+    },
+    {
+      "name": "saleor-templated-email",
+      "host": {
+        "sourcePath": "/var/app/current"
+      }
+    },
+    {
+      "name": "saleor-media",
+      "host": {
+        "sourcePath": "/var/app/current"
+      }
+    },
+    {
+      "name": "saleor-redis",
+      "host": {
+        "sourcePath": "/var/data"
+      }
+    }
+  ],
+  "containerDefinitions": [
+    {
+      "name": "saleor-core",
+      "image": "782819096000.dkr.ecr.us-west-2.amazonaws.com/richmo/saleor-core",
+      "environment": [
+        {
+          "name": "DATABASE_HOST",
+          "value": "database-1.cgfhy5l4fwrq.us-west-2.rds.amazonaws.com/postgres"
+        },
+        {
+          "name": "DEFAULT_FROM_EMAIL",
+          "value": "noreply@example.com"
+        },
+        {
+          "name": "CELERY_BROKER_URL",
+          "value": "redis://redis:6379/1"
+        },
+        {
+          "name": "SECRET_KEY",
+          "value": "HpW4X060Sjzg*dNITbxAjXh"
+        },
+        {
+          "name": "POSTGRES_USER",
+          "value": "postgres"
+        },
+        {
+          "name": "POSTGRES_PASSWORD",
+          "value": "p7iro2H62jpwHEuznL65rbV"
+        }
+      ],
+      "essential": true,
+      "memory": 1024,
+      "portMappings": [
+        {
+          "hostPort": 8000,
+          "containerPort": 8000
+        }
+      ],
+      "links": [
+        "saleor-redis",
+        "saleor-jaeger"
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "saleor-core",
+          "containerPath": "/app/saleor",
+          "readOnly": true
+        },
+        {
+          "sourceVolume": "saleor-templates",
+          "containerPath": "/app/templates",
+          "readOnly": true
+        },
+        {
+          "sourceVolume": "saleor-tests",
+          "containerPath": "/app/tests",
+          "readOnly": true
+        },
+        {
+          "sourceVolume": "saleor-assets",
+          "containerPath": "/app/saleor/static/assets",
+          "readOnly": true
+        },
+        {
+          "sourceVolume": "saleor-templated-email",
+          "containerPath": "/app/templates/templated_email/compiled",
+          "readOnly": true
+        },
+        {
+          "sourceVolume": "saleor-media",
+          "containerPath": "/app/media",
+          "readOnly": false
+        }
+      ],
+      "command": ["npm start -- --host 0.0.0.0"]
+    },
+    {
+      "name": "saleor-redis",
+      "image": "library/redis:5.0-alpine",
+      "essential": true,
+      "memory": 256,
+      "portMappings": [
+        {
+          "hostPort": 6379,
+          "containerPort": 6379
+        }
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "saleor-core",
+          "containerPath": "/data",
+          "readOnly": false
+        }
+      ]
+    },
+    {
+      "name": "saleor-worker",
+      "image": "782819096000.dkr.ecr.us-west-2.amazonaws.com/richmo/saleor-core",
+      "mountPoints": [
+        {
+          "sourceVolume": "saleor-core",
+          "containerPath": "/app/saleor:Z,cached",
+          "readOnly": true
+        },
+        {
+          "sourceVolume": "saleor-templates",
+          "containerPath": "/app/templates:Z,cached",
+          "readOnly": true
+        },
+        {
+          "sourceVolume": "saleor-templated-email",
+          "containerPath": "/app/templates/templated_email/compiled",
+          "readOnly": true
+        },
+        {
+          "sourceVolume": "saleor-media",
+          "containerPath": "/app/media",
+          "readOnly": false
+        }
+      ],
+      "command": ["celery -A saleor worker --app=saleor.celeryconf:app --loglevel=info"]
+    },
+    {
+      "name": "saleor-jaeger",
+      "image": "jaegertracing/all-in-one",
+      "portMappings": [
+        {
+          "hostPort": 5775,
+          "containerPort": "5775/udp"
+        },
+        {
+          "hostPort": 6831,
+          "containerPort": "6831/udp"
+        },
+        {
+          "hostPort": 6832,
+          "containerPort": "6832/udp"
+        },
+        {
+          "hostPort": 5778,
+          "containerPort": 5778
+        },
+        {
+          "hostPort": 16686,
+          "containerPort": 16686
+        },
+        {
+          "hostPort": 14268,
+          "containerPort": 14268
+        },
+        {
+          "hostPort": 9411,
+          "containerPort": 9411 
+        }
+      ]
+    }
+  ]
+}

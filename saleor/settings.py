@@ -29,7 +29,6 @@ def get_bool_from_env(name, default_value):
             raise ValueError("{} is an invalid value for {}".format(value, name)) from e
     return default_value
 
-
 DEBUG = get_bool_from_env("DEBUG", True)
 
 SITE_ID = 1
@@ -60,14 +59,18 @@ ALLOWED_CLIENT_HOSTS = get_list(ALLOWED_CLIENT_HOSTS)
 
 INTERNAL_IPS = get_list(os.environ.get("INTERNAL_IPS", "127.0.0.1"))
 
+DATABASE_HOST = os.environ.get("DATABASE_HOST")
+POSTGRES_USER = os.environ.get("POSTGRES_USER")
+POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD")
+DATABASE_URL = "postgres://{}:{}@{}".format(POSTGRES_USER, POSTGRES_PASSWORD, DATABASE_HOST)
+CONN_MAX_AGE = os.environ.get("CONN_MAX_AGE", 2000)
+
 DATABASES = {
-    "default": dj_database_url.config(
-        default="postgres://saleor:saleor@localhost:5432/saleor", conn_max_age=600
-    )
+    "default": dj_database_url.config(default=DATABASE_URL, conn_max_age=CONN_MAX_AGE)
 }
 
 
-TIME_ZONE = "America/Chicago"
+TIME_ZONE = "America/Los_Angeles"
 LANGUAGE_CODE = "en"
 LANGUAGES = [
     ("ar", "Arabic"),
